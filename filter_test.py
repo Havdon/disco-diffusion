@@ -18,8 +18,6 @@ def get_mask(img, bg_color = [0,0,0]):
 img = np.array(Image.open('image.png'))
 mask = get_mask(img)
 
-mask[mask] = [255,255,255]
-
 plt.figure()
 plt.imshow(mask) 
 plt.show()  # display it

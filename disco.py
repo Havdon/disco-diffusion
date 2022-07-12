@@ -1243,7 +1243,7 @@ def do_run():
 
             mask = get_mask(frame2)
  
-            warp(prev, frame2, flo_path, blend=video_init_flow_blend, weights_path=weights_path, mask=mask).save(init_image)
+            warp(prev, frame2, flo_path, blend=video_init_flow_blend, weights_path=weights_path, mask=mask, mask_filter=video_init_flow_mask_filter).save(init_image)
             
         else:
           init_image = f'{videoFramesFolder}/{frame_num+1:04}.jpg'
@@ -2140,6 +2140,7 @@ video_init_flow_warp = True #@param {type: 'boolean'}
 video_init_flow_blend =  0.999#@param {type: 'number'} #0 - take next frame, 1 - take prev warped frame
 video_init_check_consistency = False #Insert param here when ready
 video_init_blend_mode = "optical flow" #@param ['None', 'linear', 'optical flow']
+video_init_flow_mask_filter =  0.75#@param {type: 'number'} #Decreases affect of previouse frame over mask areas (0 == off)
 # Call optical flow from video frames and warp prev frame with flow
 if animation_mode == "Video Input":
     if persistent_frame_output_in_batch_folder or (not is_colab): #suggested by Chris the Wizard#8082 at discord
@@ -2641,7 +2642,7 @@ if animation_mode == 'Video Input':
         else:
             blended_w = frame2pil*(1-blend) + frame1_warped21*(blend)
         
-        if mask:
+        if mask and mask_filter > 0:
             blended_w = blended_w * (mask / 255 * mask_filter)
   
         return  PIL.Image.fromarray(blended_w.astype('uint8'))
