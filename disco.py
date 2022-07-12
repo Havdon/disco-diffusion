@@ -1228,8 +1228,22 @@ def do_run():
             if video_init_check_consistency:
                 # TBD
                 pass
+
+            def get_mask(img, bg_color = [0,0,0]):
+                black_pixels_mask = np.all(img == bg_color, axis=-1)
+                other_pixels = ~black_pixels_mask
+                img[black_pixels_mask] = [0, 0, 0]
+                img[other_pixels] = [255,255,255]
+
+                kernel = np.ones((20,20), np.uint8)
+                dilation = cv2.dilate(img,kernel,iterations = 1)
+                mask_blur = cv2.GaussianBlur(dilation, (101, 101), 0)
+                mask_blur[other_pixels] = [255,255,255]
+                return mask_blur
+
+            mask = get_mask(frame2)
  
-            warp(prev, frame2, flo_path, blend=video_init_flow_blend, weights_path=weights_path).save(init_image)
+            warp(prev, frame2, flo_path, blend=video_init_flow_blend, weights_path=weights_path, mask=mask).save(init_image)
             
         else:
           init_image = f'{videoFramesFolder}/{frame_num+1:04}.jpg'
@@ -2614,7 +2628,7 @@ if animation_mode == 'Video Input':
             img = img.resize(size)
         return img
   
-    def warp(frame1, frame2, flo_path, blend=0.5, weights_path=None):
+    def warp(frame1, frame2, flo_path, blend=0.5, weights_path=None, mask=None, mask_filter = 0.75):
         flow21 = np.load(flo_path)
         frame1pil = np.array(frame1.convert('RGB').resize((flow21.shape[1],flow21.shape[0])))
         frame1_warped21 = warp_flow(frame1pil, flow21)
@@ -2626,6 +2640,9 @@ if animation_mode == 'Video Input':
             pass
         else:
             blended_w = frame2pil*(1-blend) + frame1_warped21*(blend)
+        
+        if mask:
+            blended_w = blended_w * (mask / 255 * mask_filter)
   
         return  PIL.Image.fromarray(blended_w.astype('uint8'))
   
